@@ -3,14 +3,18 @@
 ## 0.2.0 - 2025-11-18
 
 ### Added
-- Modo compacto padrão: todo comando agora imprime um bloco único com resultado, bullets relevantes e lembrete para usar `--full` quando quiser o log completo.
-- Flag `--details`: disponível para qualquer comando, mostrando um preview truncado do stdout/stderr antes de recorrer ao `--full`.
-- Utilitário `blocks` reutilizável para formatação consistente entre plugins.
+- Default compact mode: every command now prints a single block with the outcome, relevant bullets, and a reminder to use `--full` whenever you need the complete log.
+- `--details` flag: available for any command, showing a truncated preview of stdout/stderr before falling back to `--full`.
+- Reusable `blocks` utility to keep formatting consistent across plugins.
 
 ### Changed
-- O plugin do npm agora captura métricas de auditoria, vulnerabilidades, funding e pacotes depreciados dentro do bloco premium.
-- Resumos genéricos incorporam automaticamente avisos de saída silenciada (linhas stdout/stderr + flags) como bullet adicional.
-- Documentação atualizada para refletir o novo fluxo e exemplos reais do bloco compacto.
+- The npm plugin now captures audit metrics, vulnerabilities, funding info, and deprecated packages inside the premium block.
+- Generic summaries automatically add a muted-output bullet (stdout/stderr counts plus flags).
+- README rewritten in a product-style layout (TL;DR, quickstart, recipes, troubleshooting, roadmap).
+- Documentation refreshed to showcase the new flow and real examples of the compact block.
 
 ### Fixed
-- Tests de regressão cobrindo o novo formato foram adicionados/ajustados, garantindo que futuros plugins respeitem o padrão compacto.
+- Regression tests updated to lock the new format in place so future plugins follow the compact pattern.
+
+### Documentation
+- Dedicated `LICENSE` file added to the repo and referenced in both the README and the published package.
