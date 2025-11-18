@@ -2,7 +2,6 @@
 
 <img src="assets/clarity-banner.png" alt="CLARITY banner" width="520" />
 
-# CLΛRITY
 
 > Stop reading walls of logs. Keep only the signal after every command.
 
@@ -13,8 +12,6 @@
 </div>
 
 CLΛRITY is a minimalist terminal wrapper. It runs the real command, saves stdout/stderr to `~/.clarity/logs`, and prints an actionable summary: outcome, relevant warnings, blockers, and next steps. No more endless scrolling—just the context you need to decide what to do next.
-
-![Quick CLΛRITY demo](assets/clarity-demo.gif)
 
 ## Why another wrapper?
 - **Semantic summaries**: every ecosystem (npm, git, docker, etc.) has bespoke heuristics to detect silent success, warnings, conflicts, and recommended follow-ups.
