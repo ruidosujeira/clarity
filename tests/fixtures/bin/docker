@@ -1,0 +1,12 @@
+#!/usr/bin/env node
+
+const args = process.argv.slice(2);
+if (args[0] === 'build') {
+  console.log('Step 1/3 : FROM node:18');
+  console.log('Step 2/3 : RUN npm install');
+  console.error('Step 2/3 : RUN npm install\nreturned a non-zero code: 2');
+  process.exit(1);
+}
+
+console.log('docker command executed');
+process.exit(0);

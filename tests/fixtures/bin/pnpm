@@ -1,0 +1,11 @@
+#!/usr/bin/env node
+
+const args = process.argv.slice(2);
+if (args[0] === 'install') {
+  console.log('Packages: +120');
+  console.error('ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL workspace');
+  process.exit(1);
+}
+
+console.log('pnpm command executed');
+process.exit(0);

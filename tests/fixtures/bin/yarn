@@ -1,0 +1,10 @@
+#!/usr/bin/env node
+
+const args = process.argv.slice(2);
+if (args[0] === 'build') {
+  console.log('success Saved lockfile');
+  process.exit(0);
+}
+
+console.error('error An unexpected error occurred: boom');
+process.exit(1);

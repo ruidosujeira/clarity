@@ -1,0 +1,11 @@
+#!/usr/bin/env node
+
+const args = process.argv.slice(2);
+if (args[0] === 'install') {
+  console.log('added 2 packages');
+  console.log('deprecated foo@1.0.0: use foo@2');
+  process.exit(0);
+}
+
+console.error('ERR! unknown command');
+process.exit(1);

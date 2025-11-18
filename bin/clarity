@@ -1,0 +1,297 @@
+#!/usr/bin/env node
+
+const readline = require('readline');
+const { spawn } = require('child_process');
+const runClarity = require('../src/core/runner');
+const { listLogs, formatEntries, readLogFile } = require('../src/core/logsList');
+
+function showHelp() {
+  const message = `CLΛRITY - minimalist terminal wrapper\n\n` +
+    `Usage:\n` +
+    `  clarity <command> [args...] [--full] [--raw] [--profile <name>]\n\n` +
+    `Examples:\n` +
+    `  clarity npm install\n` +
+    `  clarity git push\n` +
+    `  clarity docker build .\n` +
+    `  clarity logs --limit 5\n` +
+    `  clarity logs --open\n` +
+    `  clarity logs --pager\n` +
+    `  clarity logs --editor --latest\n` +
+    `  clarity --profile devops git push\n` +
+    `  clarity --help`;
+  console.log(message);
+}
+
+async function main() {
+  const argv = process.argv.slice(2);
+  if (argv.length === 0 || argv.includes('--help') || argv.includes('-h')) {
+    showHelp();
+    process.exit(argv.length === 0 ? 0 : 0);
+    return;
+  }
+
+  if (argv[0] === 'logs' || argv.includes('--logs')) {
+    const logsArgs = argv[0] === 'logs'
+      ? argv.slice(1)
+      : argv.filter((arg) => arg !== '--logs');
+    const options = parseLogsOptions(logsArgs);
+    const { limit, openMode, autoSelectLatest } = options;
+    const entries = listLogs({ limit });
+    console.log(formatEntries(entries));
+
+    if (openMode !== 'none') {
+      if (!entries.length) {
+        console.log('No logs available to open.');
+      } else if (openMode === 'inline') {
+        await openLogInline(entries, autoSelectLatest);
+      } else if (openMode === 'pager') {
+        await openLogInPager(entries, options.pagerCommand, autoSelectLatest);
+      } else if (openMode === 'editor') {
+        await openLogInEditor(entries, options.editorCommand, autoSelectLatest);
+      }
+    }
+
+    process.exit(0);
+    return;
+  }
+
+  let command = argv[0];
+  const rest = argv.slice(1);
+
+  const options = {
+    full: false,
+    raw: false,
+    profile: 'calm'
+  };
+
+  const commandArgs = [];
+  let skipNext = false;
+  for (let i = 0; i < rest.length; i++) {
+    if (skipNext) {
+      skipNext = false;
+      continue;
+    }
+    const arg = rest[i];
+    if (arg === '--full') {
+      options.full = true;
+      continue;
+    }
+    if (arg === '--raw') {
+      options.raw = true;
+      continue;
+    }
+    if (arg === '--profile') {
+      const next = rest[i + 1];
+      if (next) {
+        options.profile = next;
+        skipNext = true;
+      }
+      continue;
+    }
+    if (arg.startsWith('--profile=')) {
+      options.profile = arg.split('=')[1] || options.profile;
+      continue;
+    }
+    commandArgs.push(arg);
+  }
+
+  if (!command) {
+    console.error('Error: no command provided.');
+    showHelp();
+    process.exit(1);
+    return;
+  }
+
+  try {
+    const exitCode = await runClarity({ command, args: commandArgs, options });
+    process.exitCode = exitCode;
+  } catch (err) {
+    console.error('Error while running CLΛRITY:', err.message);
+    process.exit(1);
+  }
+}
+
+function parseLogsOptions(args) {
+  let limit = 10;
+  let openMode = 'none';
+  const defaultPager = process.env.CLARITY_PAGER || process.env.PAGER || process.env.EDITOR || 'less';
+  const defaultEditor = process.env.CLARITY_EDITOR || process.env.VISUAL || process.env.EDITOR || 'nano';
+  let pagerCommand = defaultPager;
+  let editorCommand = defaultEditor;
+  let autoSelectLatest = false;
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === '--limit') {
+      const value = Number(args[i + 1]);
+      if (!Number.isNaN(value) && value > 0) {
+        limit = value;
+      }
+      i += 1;
+      continue;
+    }
+    if (arg.startsWith('--limit=')) {
+      const value = Number(arg.split('=')[1]);
+      if (!Number.isNaN(value) && value > 0) {
+        limit = value;
+      }
+      continue;
+    }
+    if (arg === '--open' || arg === '--view' || arg === 'open' || arg === '--open-inline') {
+      openMode = 'inline';
+      continue;
+    }
+    if (
+      arg === '--open=pager' ||
+      arg === '--pager' ||
+      arg === 'pager' ||
+      arg === '--open-pager'
+    ) {
+      openMode = 'pager';
+      continue;
+    }
+    if (arg.startsWith('--pager=')) {
+      openMode = 'pager';
+      const value = arg.split('=')[1];
+      if (value) {
+        pagerCommand = value;
+      }
+      continue;
+    }
+    if (arg === '--open-with') {
+      openMode = 'pager';
+      const value = args[i + 1];
+      if (value) {
+        pagerCommand = value;
+      }
+      i += 1;
+      continue;
+    }
+    if (
+      arg === '--editor' ||
+      arg === '--open=editor' ||
+      arg === '--open-editor' ||
+      arg === '--edit'
+    ) {
+      openMode = 'editor';
+      continue;
+    }
+    if (arg.startsWith('--editor=')) {
+      openMode = 'editor';
+      const value = arg.split('=')[1];
+      if (value) {
+        editorCommand = value;
+      }
+      continue;
+    }
+    if (arg === '--open-with-editor') {
+      openMode = 'editor';
+      const value = args[i + 1];
+      if (value) {
+        editorCommand = value;
+      }
+      i += 1;
+      continue;
+    }
+    if (arg === '--latest' || arg === '--open-latest' || arg === '--auto') {
+      autoSelectLatest = true;
+      continue;
+    }
+  }
+
+  if (!autoSelectLatest && openMode !== 'none' && limit === 1) {
+    autoSelectLatest = true;
+  }
+
+  return { limit, openMode, pagerCommand, editorCommand, autoSelectLatest };
+}
+
+function ask(question) {
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  return new Promise((resolve) => {
+    rl.question(question, (answer) => {
+      rl.close();
+      resolve(answer);
+    });
+  });
+}
+
+async function promptEntrySelection(entries) {
+  const answer = await ask('\nSelect the log number to open: ');
+  const index = Number(answer) - 1;
+  if (Number.isNaN(index) || index < 0 || index >= entries.length) {
+    console.log('Invalid selection. Nothing opened.');
+    return null;
+  }
+
+  return entries[index];
+}
+
+async function openLogInline(entries, autoSelectLatest = false) {
+  const entry = await selectEntry(entries, autoSelectLatest);
+  if (!entry) {
+    return;
+  }
+  const content = readLogFile(entry.path);
+  if (!content) {
+    console.log('Could not read the selected log file.');
+    return;
+  }
+
+  console.log(`\n=== ${entry.fileName} ===`);
+  process.stdout.write(content);
+  console.log('\n=== end of log ===');
+}
+
+async function openLogInPager(entries, pagerCommand, autoSelectLatest = false) {
+  const entry = await selectEntry(entries, autoSelectLatest);
+  if (!entry) {
+    return;
+  }
+
+  await openLogWithCommand(entry, pagerCommand, 'pager');
+}
+
+async function openLogInEditor(entries, editorCommand, autoSelectLatest = false) {
+  const entry = await selectEntry(entries, autoSelectLatest);
+  if (!entry) {
+    return;
+  }
+
+  await openLogWithCommand(entry, editorCommand, 'editor');
+}
+
+async function selectEntry(entries, autoSelectLatest) {
+  if (autoSelectLatest) {
+    return entries[0];
+  }
+  return promptEntrySelection(entries);
+}
+
+async function openLogWithCommand(entry, commandString, label) {
+  const cmd = commandString || (label === 'editor' ? 'nano' : 'less');
+  const parts = cmd.split(/\s+/).filter(Boolean);
+  if (!parts.length) {
+    console.log(`No valid ${label} configured.`);
+    return;
+  }
+
+  const bin = parts[0];
+  const extraArgs = parts.slice(1);
+  console.log(`Opening ${entry.fileName} with ${bin}...`);
+
+  await new Promise((resolve) => {
+    const child = spawn(bin, [...extraArgs, entry.path], {
+      stdio: 'inherit'
+    });
+
+    child.on('error', () => {
+      console.log(`Failed to open the specified ${label}.`);
+      resolve();
+    });
+
+    child.on('close', () => resolve());
+  });
+}
+
+main();

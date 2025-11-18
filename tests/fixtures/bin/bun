@@ -1,0 +1,4 @@
+#!/usr/bin/env node
+
+console.error('error: reference error');
+process.exit(1);

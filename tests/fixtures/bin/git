@@ -1,0 +1,10 @@
+#!/usr/bin/env node
+
+const args = process.argv.slice(2);
+if (args[0] === 'push') {
+  console.error('rejected non-fast-forward');
+  process.exit(1);
+}
+
+console.log('nothing to commit');
+process.exit(0);
