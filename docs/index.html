@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Clarity · Calm terminal blocks</title>
+    <meta name="description" content="Clarity wraps any terminal command, keeps the logs, and hands back a focused block with next steps." />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="page">
+      <nav>
+        <span class="brand">CLΛRITY</span>
+        <a href="https://github.com/ruidosujeira/clarity" target="_blank" rel="noreferrer">View on GitHub →</a>
+      </nav>
+
+      <header class="hero">
+        <h1>Less noise, more signal.</h1>
+        <p>
+          Clarity executes the real command, captures stdout/stderr in <code>~/.clarity/logs</code>,
+          and returns a calm block with status, warnings, and next steps. Keep using npm, git,
+          docker, or anything else—just without the wall of text.
+        </p>
+        <div class="cta">
+          <a class="button primary" href="https://www.npmjs.com/package/clarityterm" target="_blank" rel="noreferrer">Install from npm</a>
+          <a class="button secondary" href="https://github.com/ruidosujeira/clarity#tldr" target="_blank" rel="noreferrer">Quick docs</a>
+        </div>
+      </header>
+
+      <section class="section">
+        <h2>Signal in practice</h2>
+        <blockquote>
+          Λ_ clarity npm install<br />
+          ✔ Install complete · 42 muted lines · try <code>--details</code> for a preview.<br />
+          <small>Logs saved to <code>~/.clarity/logs</code></small>
+        </blockquote>
+      </section>
+
+      <section class="section">
+        <h2>Why Clarity?</h2>
+        <div class="features">
+          <article class="card">
+            <h3>Smart summaries</h3>
+            <p>Plugins for npm, git, docker, bun, go, rust, and more recognize patterns and spotlight what matters.</p>
+          </article>
+          <article class="card">
+            <h3>Logs first</h3>
+            <p>Every run gets a timestamped file. Open it with <code>clarity logs --open</code>, send to your pager, or jump into your editor.</p>
+          </article>
+          <article class="card">
+            <h3>Profiles on demand</h3>
+            <p>Toggle between the restrained <code>calm</code> persona and the assertive <code>devops</code> mode with <code>--profile</code>.</p>
+          </article>
+          <article class="card">
+            <h3>No lock-in</h3>
+            <p>The original command and exit code stay intact. Need the full stream? Run with <code>--full</code> or <code>--raw</code>.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>Up and running in 60s</h2>
+        <pre><code>npm install -g clarityterm
+clarity npm install
+clarity logs --limit 3 --open</code></pre>
+        <p>Contributing? Clone the repo, run <code>npm install</code>, and use <code>npm link</code> to exercise the local binary.</p>
+      </section>
+
+      <section class="section">
+        <h2>Ready for your stack</h2>
+        <p>
+          Ship it as an npm package, call <code>node ./bin/clarity</code>, or wrap any command you trust.
+          Tune environment variables like <code>CLARITY_PROFILE</code>, <code>CLARITY_LOGS_DIR</code>,
+          and <code>CLARITY_PAGER</code> to match your workflow.
+        </p>
+      </section>
+
+      <footer>
+        MIT © 2025 · Built by people who prefer calm terminals.
+      </footer>
+    </div>
+  </body>
+</html>
