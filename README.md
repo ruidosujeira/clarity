@@ -257,5 +257,5 @@ MIT © 2024. See [`LICENSE`](LICENSE) for the full text.
 - [x] Publish the npm package (`clarityterm`).
 - [x] Roll out the block helper across all commands.
 - [x] Store log metadata to filter by status/profile.
-- [ ] Add `terraform`, `kubectl`, and `ansible` plugins.
-- [ ] `clarity watch <cmd>` to follow long-running pipelines with incremental summaries.
+- [x] Add `terraform`, `kubectl`, and `ansible` plugins.
+- [x] `clarity watch <cmd>` to follow long-running pipelines with incremental summaries.
