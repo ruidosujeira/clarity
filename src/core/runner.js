@@ -1,48 +1,10 @@
-const { spawn } = require('child_process');
 const { writeLog } = require('../utils/logs');
 const { createBlock, bullets, normalizeItem } = require('../utils/blocks');
-const { getSummary } = require('./plugins');
+const { getSummary, getSelectedPlugin, getPluginId } = require('./plugins');
 const { applyProfile } = require('./profiles');
+const { exec } = require('./exec');
 
-function execute(command, args, { raw }) {
-  return new Promise((resolve) => {
-    const child = spawn(command, args, {
-      stdio: ['inherit', 'pipe', 'pipe'],
-      env: process.env,
-      shell: false
-    });
-
-    let stdout = '';
-    let stderr = '';
-
-    child.stdout.on('data', (chunk) => {
-      const text = chunk.toString();
-      stdout += text;
-      if (raw) {
-        process.stdout.write(text);
-      }
-    });
-
-    child.stderr.on('data', (chunk) => {
-      const text = chunk.toString();
-      stderr += text;
-      if (raw) {
-        process.stderr.write(text);
-      }
-    });
-
-    child.on('error', (error) => {
-      const message = error.code === 'ENOENT'
-        ? `Command not found: ${command}`
-        : error.message;
-      resolve({ stdout, stderr: `${stderr}${message}\n`, exitCode: 127 });
-    });
-
-    child.on('close', (exitCode) => {
-      resolve({ stdout, stderr, exitCode });
-    });
-  });
-}
+// Command execution moved to src/core/exec.js
 
 function printFull({ stdout, stderr }) {
   if (stdout) {
@@ -158,9 +120,16 @@ async function runClarity({ command, args, options = {} }) {
         : 'calm';
   const profile = options.profile || 'calm';
 
-  const { stdout, stderr, exitCode } = await execute(command, args, { raw: mode === 'raw' });
+  const startedAt = new Date();
+  const { stdout, stderr, exitCode } = await exec(command, args, { raw: mode === 'raw' });
+  const finishedAt = new Date();
 
-  const logPath = writeLog({ command, args, stdout, stderr, exitCode });
+  // Prepare minimal context to resolve plugin id
+  const tmpCtx = { command, args, stdout, stderr, exitCode, profile };
+  const plugin = getSelectedPlugin(tmpCtx);
+  const pluginId = getPluginId(plugin);
+
+  const logPath = writeLog({ command, args, stdout, stderr, exitCode, profile, plugin: pluginId, startedAt, finishedAt });
 
   if (mode === 'raw') {
     return exitCode;

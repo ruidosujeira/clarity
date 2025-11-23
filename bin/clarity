@@ -4,11 +4,15 @@ const readline = require('readline');
 const { spawn } = require('child_process');
 const runClarity = require('../src/core/runner');
 const { listLogs, formatEntries, readLogFile } = require('../src/core/logsList');
+const { getLogsDir } = require('../src/utils/logs');
+const pkg = require('../package.json');
 
 function showHelp() {
   const message = `CLΛRITY - minimalist terminal wrapper\n\n` +
     `Usage:\n` +
-    `  clarity <command> [args...] [--details] [--full] [--raw] [--profile <name>]\n\n` +
+    `  clarity <command> [args...] [--details] [--full] [--raw] [--profile <name>]\n` +
+    `  clarity doctor\n` +
+    `  clarity watch <command> [args...] [--interval <sec>] [--count <n>] [--profile <name>]\n\n` +
     `Examples:\n` +
     `  clarity npm install\n` +
     `  clarity git push\n` +
@@ -17,6 +21,7 @@ function showHelp() {
     `  clarity logs --open\n` +
     `  clarity logs --pager\n` +
     `  clarity logs --editor --latest\n` +
+    `  clarity doctor\n` +
     `  clarity --profile devops git push\n` +
     `  clarity --help`;
   console.log(message);
@@ -27,6 +32,23 @@ async function main() {
   if (argv.length === 0 || argv.includes('--help') || argv.includes('-h')) {
     showHelp();
     process.exit(argv.length === 0 ? 0 : 0);
+    return;
+  }
+
+  if (argv[0] === 'doctor') {
+    printDoctor();
+    process.exit(0);
+    return;
+  }
+
+  if (argv[0] === 'watch') {
+    const { cmd, cmdArgs, interval, count, profile } = parseWatchArgs(argv.slice(1));
+    if (!cmd) {
+      console.error('Usage: clarity watch <command> [args...] [--interval <sec>] [--count <n>] [--profile <name>]');
+      process.exit(1);
+      return;
+    }
+    await runWatch(cmd, cmdArgs, { interval, count, profile });
     return;
   }
 
@@ -114,6 +136,108 @@ async function main() {
     console.error('Error while running CLΛRITY:', err.message);
     process.exit(1);
   }
+}
+
+function printDoctor() {
+  const lines = [];
+  lines.push('CLΛRITY doctor');
+  lines.push('');
+  lines.push(`Version: ${pkg.version || 'unknown'}`);
+  lines.push(`Node: ${process.version}`);
+  lines.push(`Logs directory: ${getLogsDir()}`);
+  lines.push('');
+  lines.push('Environment:');
+  const envs = [
+    'CLARITY_PROFILE',
+    'CLARITY_LOGS_DIR',
+    'CLARITY_PAGER',
+    'PAGER',
+    'CLARITY_EDITOR',
+    'EDITOR',
+    'VISUAL',
+    'CLARITY_DEBUG'
+  ];
+  envs.forEach((name) => {
+    const val = process.env[name];
+    lines.push(`  ${name}=${val !== undefined ? val : '(unset)'}`);
+  });
+  console.log(lines.join('\n'));
+}
+
+function parseWatchArgs(args) {
+  let interval = 5;
+  let count = Infinity;
+  let profile = 'calm';
+  const cmdArgs = [];
+  let cmd = null;
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i];
+    if (a === '--interval') {
+      const v = Number(args[i + 1]);
+      if (!Number.isNaN(v)) interval = v;
+      i++;
+      continue;
+    }
+    if (a.startsWith('--interval=')) {
+      const v = Number(a.split('=')[1]);
+      if (!Number.isNaN(v)) interval = v;
+      continue;
+    }
+    if (a === '--count') {
+      const v = Number(args[i + 1]);
+      if (!Number.isNaN(v)) count = v;
+      i++;
+      continue;
+    }
+    if (a.startsWith('--count=')) {
+      const v = Number(a.split('=')[1]);
+      if (!Number.isNaN(v)) count = v;
+      continue;
+    }
+    if (a === '--profile') {
+      const v = args[i + 1];
+      if (v) profile = v;
+      i++;
+      continue;
+    }
+    if (a.startsWith('--profile=')) {
+      profile = a.split('=')[1] || profile;
+      continue;
+    }
+    if (!cmd) {
+      cmd = a;
+    } else {
+      cmdArgs.push(a);
+    }
+  }
+  return { cmd, cmdArgs, interval, count, profile };
+}
+
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+async function runWatch(command, args, { interval = 5, count = Infinity, profile = 'calm' } = {}) {
+  let stopped = false;
+  process.on('SIGINT', () => {
+    stopped = true;
+    process.stderr.write('\n[clarity] watch stopped by user (Ctrl+C).\n');
+  });
+
+  let i = 0;
+  let lastCode = 0;
+  while (!stopped && i < count) {
+    const iter = i + 1;
+    const ts = new Date().toLocaleTimeString();
+    console.log(`\n=== clarity watch: iteration ${iter} @ ${ts} ===`);
+    // Reuse runClarity for each iteration
+    lastCode = await runClarity({ command, args, options: { profile } });
+    i++;
+    if (!stopped && i < count) {
+      await sleep(Math.max(0, interval) * 1000);
+    }
+  }
+  process.exit(lastCode);
 }
 
 function parseLogsOptions(args) {

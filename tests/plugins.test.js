@@ -10,6 +10,9 @@ const dockerPlugin = require('../src/plugins/docker');
 const pythonPlugin = require('../src/plugins/python');
 const goPlugin = require('../src/plugins/go');
 const rustPlugin = require('../src/plugins/rust');
+const terraformPlugin = require('../src/plugins/terraform');
+const kubectlPlugin = require('../src/plugins/kubectl');
+const ansiblePlugin = require('../src/plugins/ansible');
 
 function ctx(overrides) {
   return Object.assign(
@@ -179,4 +182,42 @@ test('rust plugin reports compile errors', () => {
 
   assert.strictEqual(summary.error, 'Rust build failed due to a compilation error.');
   assert.ok(summary.nextSteps && summary.nextSteps[0].includes("error[E..."));
+});
+
+test('terraform plugin summarizes plan counts', () => {
+  const summary = terraformPlugin.summarize(
+    ctx({
+      command: 'terraform',
+      args: ['plan'],
+      stdout: 'Plan: 2 to add, 1 to change, 0 to destroy.',
+      exitCode: 0
+    })
+  );
+
+  assert.ok(summary.block && summary.block.includes('Terraform plan'));
+  assert.ok(summary.block.includes('2 to add'));
+});
+
+test('kubectl plugin reports apply results', () => {
+  const summary = kubectlPlugin.summarize(
+    ctx({
+      command: 'kubectl',
+      args: ['apply', '-f', 'deploy.yaml'],
+      stdout: 'deployment.apps/myapp configured\nservice/myapp unchanged',
+      exitCode: 0
+    })
+  );
+  assert.ok(summary.block && summary.block.includes('kubectl apply succeeded'));
+});
+
+test('ansible plugin parses recap and flags failures', () => {
+  const summary = ansiblePlugin.summarize(
+    ctx({
+      command: 'ansible-playbook',
+      stdout: 'PLAY RECAP ***************************\nlocalhost : ok=3 changed=1 unreachable=0 failed=1 skipped=0',
+      exitCode: 2
+    })
+  );
+  assert.strictEqual(summary.error, 'Ansible playbook reported failures.');
+  assert.ok(summary.warnings && summary.warnings.join(' ').includes('failed=1'));
 });

@@ -1,6 +1,6 @@
 {
   "name": "clarityterm",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "CLΛRITY is a minimalist terminal wrapper that summarizes commands and cuts noise.",
   "bin": {
     "clarity": "bin/clarity"

@@ -16,6 +16,7 @@
  */
 
 const npmPlugin = require('../plugins/npm');
+const { debug } = require('../utils/debug');
 const yarnPlugin = require('../plugins/yarn');
 const pnpmPlugin = require('../plugins/pnpm');
 const gitPlugin = require('../plugins/git');
@@ -24,6 +25,9 @@ const bunPlugin = require('../plugins/bun');
 const pythonPlugin = require('../plugins/python');
 const goPlugin = require('../plugins/go');
 const rustPlugin = require('../plugins/rust');
+const terraformPlugin = require('../plugins/terraform');
+const kubectlPlugin = require('../plugins/kubectl');
+const ansiblePlugin = require('../plugins/ansible');
 const genericPlugin = require('../plugins/generic');
 
 const registeredPlugins = [
@@ -36,6 +40,9 @@ const registeredPlugins = [
   pythonPlugin,
   goPlugin,
   rustPlugin,
+  terraformPlugin,
+  kubectlPlugin,
+  ansiblePlugin,
   genericPlugin
 ];
 
@@ -44,11 +51,18 @@ function getSummary(ctx) {
     try {
       return item.supports(ctx);
     } catch (err) {
+      debug('plugin supports() threw, falling back later:', item && (item.id || item.name), err && err.message);
       return false;
     }
   }) || genericPlugin;
 
-  const summary = plugin.summarize(ctx) || {};
+  let summary = {};
+  try {
+    summary = plugin.summarize(ctx) || {};
+  } catch (err) {
+    debug('plugin summarize() threw, using generic fallback:', plugin && (plugin.id || plugin.name), err && err.message);
+    return genericPlugin.summarize(ctx);
+  }
   if (typeof summary !== 'object') {
     return genericPlugin.summarize(ctx);
   }
@@ -70,5 +84,19 @@ function getSummary(ctx) {
 
 module.exports = {
   getSummary,
-  registeredPlugins
+  registeredPlugins,
+  /**
+   * Return the first plugin that supports the context, or the generic plugin.
+   */
+  getSelectedPlugin(ctx) {
+    return registeredPlugins.find((item) => {
+      try { return item.supports(ctx); } catch { return false; }
+    }) || genericPlugin;
+  },
+  /**
+   * Best-effort identifier for a plugin (function name or explicit id property)
+   */
+  getPluginId(plugin) {
+    return plugin && (plugin.id || plugin.name || 'generic');
+  }
 };

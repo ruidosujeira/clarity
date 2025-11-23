@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.3.0 - 2025-11-22
+
+### Added
+- New plugins with actionable summaries:
+  - Terraform: parses `plan`/`apply` outputs, reporting add/change/destroy counts and surfacing clear errors with next steps.
+  - Kubectl: summarizes `apply`/`rollout` outcomes (created/configured/unchanged/deleted) and highlights RBAC/config issues.
+  - Ansible: parses PLAY RECAP (ok/changed/unreachable/failed/skipped), marks failures, and suggests next steps.
+- `clarity watch <cmd>` subcommand to follow long-running pipelines: runs the command in a loop and prints a summary block per iteration (Ctrl+C to stop). Each iteration still writes .log and .json metadata.
+
+### Changed
+- CLI help updated to include the new `watch` subcommand and its flags (`--interval`, `--count`, `--profile`).
+- Plugin registry now loads Terraform, Kubectl, and Ansible plugins with priority before the generic fallback.
+
+### Tests
+- Expanded unit tests to cover the new plugins.
+
+### Documentation
+- README atualizado anteriormente; futuras melhorias vão destacar `watch` e os novos plugins com exemplos.
+
 ## 0.2.0 - 2025-11-18
 
 ### Added
